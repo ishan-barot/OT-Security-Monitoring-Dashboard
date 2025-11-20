@@ -1,0 +1,77 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/ot_security_dashboard/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// ot devices in the environment
+model Device {
+  id            String   @id @default(cuid())
+  name          String
+  deviceType    String   // plc, rtu, hmi, workstation, etc
+  ipAddress     String
+  zone          String   // network zone/location
+  status        String   // online, offline, warning, critical
+  cpuUsage      Float
+  memoryUsage   Float
+  networkTraffic Float
+  protocol      String   // modbus, dnp3, opc-ua, etc
+  lastSeen      DateTime
+  vendor        String
+  model         String
+  firmwareVersion String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  alerts        Alert[]
+}
+
+// security alerts/events
+model Alert {
+  id            String   @id @default(cuid())
+  timestamp     DateTime
+  severity      String   // critical, high, medium, low
+  title         String
+  description   String
+  mitreId       String   // t0831, t0855, etc
+  mitreTechnique String  // full technique name
+  affectedDevice String
+  deviceId      String?
+  device        Device?  @relation(fields: [deviceId], references: [id])
+  zone          String
+  detectionRule String
+  status        String   @default("open") // open, investigating, resolved
+  createdAt     DateTime @default(now())
+}
+
+// detection rules in the system
+model DetectionRule {
+  id            String   @id @default(cuid())
+  name          String
+  description   String
+  mitreId       String
+  mitreTechnique String
+  detectionLogic String
+  severity      String
+  exampleAlert  String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// nist 800-82 compliance items
+model ComplianceItem {
+  id            String   @id @default(cuid())
+  controlId     String
+  category      String   // access control, audit, etc
+  description   String
+  status        String   // compliant, partial, non-compliant
+  notes         String?
+  lastAssessed  DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
